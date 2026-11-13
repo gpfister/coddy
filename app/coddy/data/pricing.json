@@ -1,0 +1,78 @@
+{
+  "currency": "EUR",
+  "in_effect_date": "2026-11-11",
+  "pricing_unit_tokens": 1000000,
+  "cache_storage_unit_hours": 1,
+  "usd_to_eur_benchmark_rate": 0.92,
+  "regional_location_premium_factor": 1.10,
+  "models": [
+    {
+      "model_id": "gemini-4-carbon",
+      "display_name": "Gemini 4 Carbon",
+      "context_window_tokens": 1000000,
+      "max_output_tokens": 1000000,
+      "tiers": [
+        {
+          "min_prompt_tokens": 0,
+          "max_prompt_tokens": null,
+          "input_eur": 2.024,
+          "input_audio_eur": 2.024,
+          "output_eur": 10.12,
+          "context_cache_read_eur": 0.1012,
+          "context_cache_storage_eur_per_hour": 0.51
+        }
+      ]
+    },
+    {
+      "model_id": "gemini-4-argon",
+      "display_name": "Gemini 4 Argon",
+      "context_window_tokens": 1000000,
+      "max_output_tokens": 1000000,
+      "tiers": [
+        {
+          "min_prompt_tokens": 0,
+          "max_prompt_tokens": null,
+          "input_eur": 2.024,
+          "input_audio_eur": 2.024,
+          "output_eur": 10.12,
+          "context_cache_read_eur": 0.1012,
+          "context_cache_storage_eur_per_hour": 0.51
+        }
+      ]
+    },
+    {
+      "model_id": "gemini-3.8-flash",
+      "display_name": "Gemini 3.8 Flash",
+      "context_window_tokens": 1048576,
+      "max_output_tokens": 65536,
+      "tiers": [
+        {
+          "min_prompt_tokens": 0,
+          "max_prompt_tokens": null,
+          "input_eur": 0.759,
+          "input_audio_eur": 0.759,
+          "output_eur": 3.795,
+          "context_cache_read_eur": 0.0759,
+          "context_cache_storage_eur_per_hour": 0.51
+        }
+      ]
+    },
+    {
+      "model_id": "gemini-3.5-flash-lite",
+      "display_name": "Gemini 3.5 Flash-Lite",
+      "context_window_tokens": 1048576,
+      "max_output_tokens": 65536,
+      "tiers": [
+        {
+          "min_prompt_tokens": 0,
+          "max_prompt_tokens": null,
+          "input_eur": 0.3036,
+          "input_audio_eur": 0.3036,
+          "output_eur": 2.53,
+          "context_cache_read_eur": 0.0304,
+          "context_cache_storage_eur_per_hour": 0.51
+        }
+      ]
+    }
+  ]
+}

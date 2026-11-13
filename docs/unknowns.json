@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "app": "coddy",
+  "description": "Catalog of unreferenced, disconnected, or uninvoked code components identified during repository audit.",
+  "unknowns": [
+    {
+      "id": "unknown_terminal_ask_user",
+      "symbol": "terminal_ask_user",
+      "source_file": "app/coddy/cli/code.py",
+      "line_anchor": "L19-L23",
+      "category": "disconnected_callback",
+      "description": "Interactive multiple choice question prompt defined in the CLI layer, but never injected into CodingOrchestratorWorkflow or called by any active workflow node.",
+      "impact": "Code bloat and misleading intent mapping; clarification loops cannot actually execute interactively.",
+      "recommendation": "Either wire this callback into CodingOrchestratorWorkflow as an approval/clarification hook or remove it if clarification is automated."
+    },
+    {
+      "id": "unknown_terminal_approval_gate",
+      "symbol": "terminal_approval_gate",
+      "source_file": "app/coddy/cli/code.py",
+      "line_anchor": "L24-L51",
+      "category": "disconnected_callback",
+      "description": "Interactive human approval gate implementing Rule R4 (Approve, Minor Tweak, Scope Change, Abort), but never injected into CodingOrchestratorWorkflow or executed in the graph.",
+      "impact": "Orchestrator proceeds through steps without waiting for human approval gate confirmation despite Rule R4 specifications.",
+      "recommendation": "Inject as an approval gate callback into CodingOrchestratorWorkflow between pipeline steps or document as planned interactive gate."
+    },
+    {
+      "id": "unknown_cli_auto_approve_flag",
+      "symbol": "auto_approve",
+      "source_file": "app/coddy/cli/code.py",
+      "line_anchor": "L56-L65",
+      "category": "unwired_cli_flag",
+      "description": "CLI option `--yes` / `-y` is accepted and prints '[dim]Auto-approve mode enabled[/dim]', but the boolean value is never passed to CodingOrchestratorWorkflow.start() or inspected by any execution node.",
+      "impact": "Users pass `--yes` expecting non-interactive mode, but the flag has no operational effect because the workflow has no interactive gates to bypass.",
+      "recommendation": "Wire auto_approve to CodingOrchestratorWorkflow once terminal_approval_gate is connected."
+    },
+    {
+      "id": "unknown_config_classes",
+      "symbol": "CoddyConfig",
+      "source_file": "app/coddy/config.py",
+      "line_anchor": "L70-L85",
+      "category": "unused_config",
+      "description": "Configuration models CoddyConfig, CodingSanitizeConfig, and CodingResearchPlanConfig define model names and thinking budgets, but are never imported in app/coddy/agentic/ or app/coddy/cli/. Agents hardcode model strings ('gemini-3.5-flash-lite', 'gemini-3.8-flash').",
+      "impact": "Config settings in config.py cannot be modified by users to alter agent behavior; changes in config.py have no runtime effect.",
+      "recommendation": "Import CoddyConfig in CodingSanitizerAgent and CodingResearchPlannerAgent so model names and thinking budgets are configurable."
+    },
+    {
+      "id": "unknown_verify_models_call",
+      "symbol": "verify_models",
+      "source_file": "app/coddy/helpers/pre_flight_checks.py",
+      "line_anchor": "L160-L162",
+      "category": "uninvoked_preflight",
+      "description": "Pre-flight validation ensuring required local LLM models are loaded on http://localhost:1234/v1. Function is thoroughly tested in tests/test_model_verifier.py, but is never invoked before CodingOrchestratorWorkflow.start() in code_cmd.",
+      "impact": "If a required local model is absent, the workflow fails mid-execution with an unhandled exception rather than failing fast at startup.",
+      "recommendation": "Invoke verify_models() inside code_cmd() before instantiating or starting CodingOrchestratorWorkflow."
+    },
+    {
+      "id": "unknown_json_helper_finders",
+      "symbol": "find_agents_markdown",
+      "source_file": "app/coddy/helpers/json_helpers.py",
+      "line_anchor": "L27-L41",
+      "category": "unreferenced_helper",
+      "description": "Helper functions find_agents_markdown(), find_skills_directory(), get_local_skills_summary(), and extract_reasoning() are defined in json_helpers.py but never imported or called anywhere across the application runtime.",
+      "impact": "Dead utility code increasing cognitive overhead and maintenance burden.",
+      "recommendation": "Incorporate into load_project_context() to dynamically locate local project instructions (AGENTS.md) and skills, or delete if obsolete."
+    },
+    {
+      "id": "unknown_graphrag_toolbox",
+      "symbol": "GraphRAGTools",
+      "source_file": "app/coddy/agentic/tools/graphrag_tools.py",
+      "line_anchor": "L488-L576",
+      "category": "unused_tool",
+      "description": "GraphRAGTools defines 11 comprehensive tools (search_facts, search_documents, get_code_entity, get_call_hierarchy, list_files, web_search, etc.) tested in tests/test_graphrag.py, but neither CodingSanitizerAgent nor CodingResearchPlannerAgent includes them in their tools list (only read_file is used).",
+      "impact": "GraphRAG knowledge graph and vector store are ingested and tested, but no worker agent actually queries them during workflow execution.",
+      "recommendation": "Equip CodingResearchPlannerAgent with GraphRAGTools so it can query codebase entities and documentation during research decomposition."
+    },
+    {
+      "id": "unknown_downstream_rtd_schemas",
+      "symbol": "Specification",
+      "source_file": "app/coddy/agentic/schemas/specification.py",
+      "line_anchor": "L92-L109",
+      "category": "unwired_schema",
+      "description": "Specification and Plan schemas, along with SpecificationMapper and PlanMapper, are fully implemented and tested, but steps 5 and 6 in CodingOrchestratorWorkflow (step_5_node, step_6_node) are currently empty passthroughs ('pass'). Schemas are only exposed via 'coddy schemas'.",
+      "impact": "The RTD workflow currently terminates after Step 2 (ResearchPlan); downstream specification and implementation plan generation are not active.",
+      "recommendation": "Implement Step 5 (coding-specify) and Step 6 (coding-plan) worker agents to consume ResearchPlan and produce Specification and Plan artifacts."
+    },
+    {
+      "id": "unknown_memory_db_path",
+      "symbol": "get_memory_db_path",
+      "source_file": "app/coddy/agentic/services/paths.py",
+      "line_anchor": "L59-L63",
+      "category": "unimplemented_storage",
+      "description": "get_memory_db_path() returns '~/.coddy/memory.db' with docstring 'Path to the LadybugDB database for long-term memory'. However, LadybugDB is not installed as a dependency and no code interacts with this database path.",
+      "impact": "Architectural documentation lists LadybugDB as tiered storage, but GraphRAG actually uses FalkorDBLite and Qdrant in .cache/graphrag/.",
+      "recommendation": "Document memory.db as a planned migration target or remove get_memory_db_path until LadybugDB integration is implemented."
+    }
+  ]
+}

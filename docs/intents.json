@@ -1,0 +1,1247 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "app": "coddy",
+  "description": "Coddy Intent Knowledge Graph - Central Registry of System Intents",
+  "intent_types": {
+    "cli_interface": {
+      "pattern": "<CLI command> CALLS <handling function/method>",
+      "description": "User-facing command line interface commands and subcommands mapped to their handling Python functions."
+    },
+    "agent_workflow": {
+      "pattern": "<Orchestrating agent> USES <Worker agent> | <DecisionNode/Router> CALLS_IF <Target Node>",
+      "description": "Orchestrator graph workflow routing, worker agent dispatch invocations, and decision node (:DecisionNode, :Router) conditional branching (CALLS_IF) documenting logical text."
+    },
+    "tool_usage": {
+      "pattern": "<Worker agent> USES <Tool> CALLS <handling function/method>",
+      "description": "Specialized worker agent tool invocations resolving to internal tool provider handling methods."
+    },
+    "database_operation": {
+      "pattern": "<function/method> READS/CREATES/UPDATES/DELETES <Database <object>>",
+      "description": "Operations performed on embedded in-memory database engines (FalkorDB Cypher graphs and Qdrant sparse vector collections)."
+    },
+    "file_io": {
+      "pattern": "<function/method> READS/CREATES/UPDATES/DELETES <file>",
+      "description": "Filesystem input/output operations including GraphRAG commit caches, structured artifacts, and execution session traces."
+    },
+    "external_api": {
+      "pattern": "<Caller> CALLS <External Service/API>",
+      "description": "Network and local HTTP service requests targeting LLM inference engines and search endpoints."
+    },
+    "callback_dispatch": {
+      "pattern": "<Provider> INJECTS <Callback> INTO <Consumer>",
+      "description": "Dynamic dependency injections, interactive terminal callbacks, and approval gate hooks."
+    },
+    "artifact_transformation": {
+      "pattern": "<Mapper> TRANSFORMS <Source Schema> INTO <Target Document>",
+      "description": "Deterministic Pydantic schema mappers converting JSON data models into human-readable Markdown documents (Rule R2)."
+    }
+  },
+  "intents": [
+    {
+      "id": "cli_code_cmd",
+      "type": "cli_interface",
+      "subject": "coddy code [PROMPT]",
+      "predicate": "CALLS",
+      "object": "code_cmd",
+      "source_file": "app/coddy/cli/code.py",
+      "line_anchor": "L56-L103",
+      "symbol": "code_cmd",
+      "description": "Runs the Coddy workflow on a user prompt or piped input via `coddy code`.",
+      "details": {
+        "framework": "typer",
+        "subcommand": "code",
+        "options": [
+          "--yes",
+          "-y",
+          "--display-markdown",
+          "--no-display-markdown",
+          "--research-material-file",
+          "-r"
+        ]
+      }
+    },
+    {
+      "id": "cli_graphrag_ingest",
+      "type": "cli_interface",
+      "subject": "coddy graphrag ingest",
+      "predicate": "CALLS",
+      "object": "graphrag_ingest_cmd",
+      "source_file": "app/coddy/cli/graphrag.py",
+      "line_anchor": "L100-L117",
+      "symbol": "graphrag_ingest_cmd",
+      "description": "Forces re-ingestion of codebase AST, docs, and intents into .cache/graphrag/<commit_sha>/.",
+      "details": {
+        "subcommand": "graphrag ingest",
+        "cache_target": ".cache/graphrag"
+      }
+    },
+    {
+      "id": "cli_graphrag_status",
+      "type": "cli_interface",
+      "subject": "coddy graphrag status",
+      "predicate": "CALLS",
+      "object": "graphrag_status_cmd",
+      "source_file": "app/coddy/cli/graphrag.py",
+      "line_anchor": "L119-L163",
+      "symbol": "graphrag_status_cmd",
+      "description": "Displays GraphRAG cache presence, git commit SHA, tree dirtiness, and entity counts.",
+      "details": {
+        "subcommand": "graphrag status"
+      }
+    },
+    {
+      "id": "cli_schemas_dump",
+      "type": "cli_interface",
+      "subject": "coddy schemas",
+      "predicate": "CALLS",
+      "object": "dump_schemas",
+      "source_file": "app/coddy/app.py",
+      "line_anchor": "L49-L65",
+      "symbol": "dump_schemas",
+      "description": "Prints JSON Schema definitions for Specification, Plan, SanitizedUserRequest, and ResearchPlan.",
+      "details": {
+        "subcommand": "schemas"
+      }
+    },
+    {
+      "id": "cli_console_script",
+      "type": "cli_interface",
+      "subject": "coddy",
+      "predicate": "CALLS",
+      "object": "main",
+      "source_file": "app/coddy/app.py",
+      "line_anchor": "L66-L70",
+      "symbol": "main",
+      "description": "Console script entrypoint registered in pyproject.toml [project.scripts].",
+      "details": {
+        "entrypoint": "coddy=app.coddy.app:main"
+      }
+    },
+    {
+      "id": "workflow_orchestrate_sanitize",
+      "type": "agent_workflow",
+      "subject": "CodingOrchestratorWorkflow",
+      "predicate": "USES",
+      "object": "CodingSanitizerAgent",
+      "source_file": "app/coddy/agentic/workflows/coding_orchestrate/workflow.py",
+      "line_anchor": "L155-L266",
+      "symbol": "CodingOrchestratorWorkflow",
+      "description": "Dispatches STEP 1: Input sanitation and noise reduction via node_sanitize.",
+      "details": {
+        "node": "node_sanitize",
+        "worker": "coding_sanitizer",
+        "model": "gemini-3.5-flash-lite"
+      }
+    },
+    {
+      "id": "workflow_orchestrate_clarifier",
+      "type": "agent_workflow",
+      "subject": "CodingOrchestratorWorkflow",
+      "predicate": "USES",
+      "object": "CodingAmbiguityClarifierAgent",
+      "source_file": "app/coddy/agentic/workflows/coding_orchestrate/workflow.py",
+      "line_anchor": "L155-L266",
+      "symbol": "CodingOrchestratorWorkflow",
+      "description": "Dispatches STEP 2: Interactive ambiguity clarification with user and request enhancement via node_clarify.",
+      "details": {
+        "node": "node_clarify",
+        "worker": "coding_ambiguity_clarifier",
+        "model": "gemini-3.5-flash-lite"
+      }
+    },
+    {
+      "id": "workflow_orchestrate_research",
+      "type": "agent_workflow",
+      "subject": "CodingOrchestratorWorkflow",
+      "predicate": "USES",
+      "object": "CodingResearchPlannerAgent",
+      "source_file": "app/coddy/agentic/workflows/coding_orchestrate/workflow.py",
+      "line_anchor": "L155-L266",
+      "symbol": "CodingOrchestratorWorkflow",
+      "description": "Dispatches STEP 3: Research plan decomposition into subjects grouped by topic via node_research.",
+      "details": {
+        "node": "node_research",
+        "worker": "coding_research_planner",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "id": "workflow_orchestrate_researcher",
+      "type": "agent_workflow",
+      "subject": "CodingOrchestratorWorkflow",
+      "predicate": "USES",
+      "object": "CodingResearcherAgent",
+      "source_file": "app/coddy/agentic/workflows/coding_orchestrate/workflow.py",
+      "line_anchor": "L155-L266",
+      "symbol": "CodingOrchestratorWorkflow",
+      "description": "Dispatches STEP 3: Episodic technical research on individual subjects via coding_researcher.",
+      "details": {
+        "node": "coding_researcher",
+        "worker": "coding_researcher",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "id": "workflow_orchestrate_research_clarifier",
+      "type": "agent_workflow",
+      "subject": "CodingOrchestratorWorkflow",
+      "predicate": "USES",
+      "object": "CodingResearchClarifierAgent",
+      "source_file": "app/coddy/agentic/workflows/coding_orchestrate/workflow.py",
+      "line_anchor": "L155-L266",
+      "symbol": "CodingOrchestratorWorkflow",
+      "description": "Dispatches STEP 3: Research open issues clarification via coding_research_clarifier.",
+      "details": {
+        "node": "coding_research_clarifier",
+        "worker": "coding_research_clarifier",
+        "model": "gemini-3.5-flash-lite"
+      }
+    },
+    {
+      "id": "workflow_orchestrate_research_reporter",
+      "type": "agent_workflow",
+      "subject": "CodingOrchestratorWorkflow",
+      "predicate": "USES",
+      "object": "CodingResearchReporterAgent",
+      "source_file": "app/coddy/agentic/workflows/coding_orchestrate/workflow.py",
+      "line_anchor": "L155-L266",
+      "symbol": "CodingOrchestratorWorkflow",
+      "description": "Dispatches STEP 3: Final technical research report synthesis via coding_research_reporter.",
+      "details": {
+        "node": "coding_research_reporter",
+        "worker": "coding_research_reporter",
+        "model": "gemini-3.8-flash"
+      }
+    },
+    {
+      "id": "workflow_decision_verify_remaining_research_loop",
+      "type": "agent_workflow",
+      "subject": "verify_remaining_research",
+      "predicate": "CALLS_IF",
+      "object": "setup_episodic_research_context",
+      "source_file": "app/coddy/agentic/workflows/coding_orchestrate/step_3_nodes.py",
+      "line_anchor": "L284-L314",
+      "symbol": "verify_remaining_research",
+      "description": "Decision Router: Loops back to setup next episodic research context when subjects remain in the queue.",
+      "details": {
+        "labels": [":DecisionNode", ":Router"],
+        "route": "loop_research",
+        "logical_text": "Queue index < queue length (more research subjects remain in queue)"
+      }
+    },
+    {
+      "id": "workflow_decision_verify_remaining_research_clarify",
+      "type": "agent_workflow",
+      "subject": "verify_remaining_research",
+      "predicate": "CALLS_IF",
+      "object": "prepare_clarifier_input",
+      "source_file": "app/coddy/agentic/workflows/coding_orchestrate/step_3_nodes.py",
+      "line_anchor": "L284-L314",
+      "symbol": "verify_remaining_research",
+      "description": "Decision Router: Routes to clarifier preparation when all research episodes are complete and open issues were raised.",
+      "details": {
+        "labels": [":DecisionNode", ":Router"],
+        "route": "clarify_issues",
+        "logical_text": "Queue index >= queue length and open_issues_raised is not empty"
+      }
+    },
+    {
+      "id": "workflow_decision_verify_remaining_research_report",
+      "type": "agent_workflow",
+      "subject": "verify_remaining_research",
+      "predicate": "CALLS_IF",
+      "object": "prepare_reporter_input",
+      "source_file": "app/coddy/agentic/workflows/coding_orchestrate/step_3_nodes.py",
+      "line_anchor": "L284-L314",
+      "symbol": "verify_remaining_research",
+      "description": "Decision Router: Routes directly to reporter preparation when all research episodes are complete and no open issues exist.",
+      "details": {
+        "labels": [":DecisionNode", ":Router"],
+        "route": "assemble_report",
+        "logical_text": "Queue index >= queue length and open_issues_raised is empty"
+      }
+    },
+    {
+      "id": "workflow_decision_check_clarifier_outcome_new_research",
+      "type": "agent_workflow",
+      "subject": "check_clarifier_outcome",
+      "predicate": "CALLS_IF",
+      "object": "setup_episodic_research_context",
+      "source_file": "app/coddy/agentic/workflows/coding_orchestrate/step_3_nodes.py",
+      "line_anchor": "L384-L428",
+      "symbol": "check_clarifier_outcome",
+      "description": "Decision Router: Routes back to episodic research loop when user clarification introduced new research topics.",
+      "details": {
+        "labels": [":DecisionNode", ":Router"],
+        "route": "new_research",
+        "logical_text": "User clarification resulted in new_research_topics being added to the queue"
+      }
+    },
+    {
+      "id": "workflow_decision_check_clarifier_outcome_report",
+      "type": "agent_workflow",
+      "subject": "check_clarifier_outcome",
+      "predicate": "CALLS_IF",
+      "object": "prepare_reporter_input",
+      "source_file": "app/coddy/agentic/workflows/coding_orchestrate/step_3_nodes.py",
+      "line_anchor": "L384-L428",
+      "symbol": "check_clarifier_outcome",
+      "description": "Decision Router: Routes to reporter preparation when clarification is complete without new research topics.",
+      "details": {
+        "labels": [":DecisionNode", ":Router"],
+        "route": "assemble_report",
+        "logical_text": "All open issues resolved or closed without new research topics added"
+      }
+    },
+    {
+      "id": "tool_research_search_facts",
+      "type": "tool_usage",
+      "subject": "CodingResearchPlanAgent",
+      "predicate": "USES",
+      "object": "GraphRAGTools.search_facts",
+      "source_file": "app/coddy/agentic/tools/graphrag_tools.py",
+      "line_anchor": "L48-L84",
+      "symbol": "GraphRAGTools.search_facts",
+      "description": "Searches architectural facts, conventions, and intents with BM25/BM42 Reciprocal Rank Fusion.",
+      "details": {
+        "tool_name": "GraphRAG.search_facts",
+        "collection": "Fact"
+      }
+    },
+    {
+      "id": "tool_research_search_documents",
+      "type": "tool_usage",
+      "subject": "CodingResearchPlanAgent",
+      "predicate": "USES",
+      "object": "GraphRAGTools.search_documents",
+      "source_file": "app/coddy/agentic/tools/graphrag_tools.py",
+      "line_anchor": "L86-L120",
+      "symbol": "GraphRAGTools.search_documents",
+      "description": "Searches documentation chunks and markdown guides using BM25/BM42 sparse vector search.",
+      "details": {
+        "tool_name": "GraphRAG.search_documents",
+        "collection": "DocChunk"
+      }
+    },
+    {
+      "id": "tool_research_get_code_entity",
+      "type": "tool_usage",
+      "subject": "CodingResearchPlanAgent",
+      "predicate": "USES",
+      "object": "GraphRAGTools.get_code_entity",
+      "source_file": "app/coddy/agentic/tools/graphrag_tools.py",
+      "line_anchor": "L142-L216",
+      "symbol": "GraphRAGTools.get_code_entity",
+      "description": "Performs exact Cypher lookups on FalkorDB for code nodes (Class, Function, Interface, Variable).",
+      "details": {
+        "tool_name": "GraphRAG.get_code_entity",
+        "store": "FalkorDB"
+      }
+    },
+    {
+      "id": "tool_research_get_call_hierarchy",
+      "type": "tool_usage",
+      "subject": "CodingResearchPlanAgent",
+      "predicate": "USES",
+      "object": "GraphRAGTools.get_call_hierarchy",
+      "source_file": "app/coddy/agentic/tools/graphrag_tools.py",
+      "line_anchor": "L217-L250",
+      "symbol": "GraphRAGTools.get_call_hierarchy",
+      "description": "Traverses 1-hop and 2-hop CALLS relationships in FalkorDB to discover callers and callees.",
+      "details": {
+        "tool_name": "GraphRAG.get_call_hierarchy",
+        "store": "FalkorDB"
+      }
+    },
+    {
+      "id": "tool_research_list_files",
+      "type": "tool_usage",
+      "subject": "CodingResearchPlanAgent",
+      "predicate": "USES",
+      "object": "GraphRAGTools.list_files",
+      "source_file": "app/coddy/agentic/tools/graphrag_tools.py",
+      "line_anchor": "L366-L395",
+      "symbol": "GraphRAGTools.list_files",
+      "description": "Lists repository files and directory structure with optional glob pattern filtering.",
+      "details": {
+        "tool_name": "GraphRAG.list_files"
+      }
+    },
+    {
+      "id": "tool_research_web_search",
+      "type": "tool_usage",
+      "subject": "CodingResearchPlanAgent",
+      "predicate": "USES",
+      "object": "GraphRAGTools.web_search",
+      "source_file": "app/coddy/agentic/tools/graphrag_tools.py",
+      "line_anchor": "L436-L487",
+      "symbol": "GraphRAGTools.web_search",
+      "description": "Executes external web searches via DuckDuckGo HTML endpoint with snippet extraction.",
+      "details": {
+        "tool_name": "WebSearch.web_search",
+        "endpoint": "https://html.duckduckgo.com/html/"
+      }
+    },
+    {
+      "id": "tool_clarifier_ask_question",
+      "type": "tool_usage",
+      "subject": "CodingAmbiguityClarifierAgent",
+      "predicate": "USES",
+      "object": "ask_question",
+      "source_file": "app/coddy/agentic/tools/clarification_tools.py",
+      "line_anchor": "L8-L24",
+      "symbol": "ask_question",
+      "description": "Prompts user interactively in terminal or auto-approves candidate choices to resolve ambiguities.",
+      "details": {
+        "tool_name": "ask_question"
+      }
+    },
+    {
+      "id": "db_falkordb_upsert_nodes",
+      "type": "database_operation",
+      "subject": "FalkorDBService.upsert_nodes",
+      "predicate": "CREATES",
+      "object": "Database<FalkorDB:Node>",
+      "source_file": "app/coddy/utils/services/falkordb_service.py",
+      "line_anchor": "L55-L80",
+      "symbol": "FalkorDBService.upsert_nodes",
+      "description": "Inserts or merges Cypher nodes with sanitized labels and property dictionaries into FalkorDB.",
+      "details": {
+        "database": "FalkorDB",
+        "operation": "MERGE"
+      }
+    },
+    {
+      "id": "db_falkordb_upsert_edges",
+      "type": "database_operation",
+      "subject": "FalkorDBService.upsert_edges",
+      "predicate": "CREATES",
+      "object": "Database<FalkorDB:Edge>",
+      "source_file": "app/coddy/utils/services/falkordb_service.py",
+      "line_anchor": "L81-L103",
+      "symbol": "FalkorDBService.upsert_edges",
+      "description": "Inserts or merges Cypher directed relationships between existing nodes in FalkorDB.",
+      "details": {
+        "database": "FalkorDB",
+        "operation": "MERGE"
+      }
+    },
+    {
+      "id": "db_falkordb_query",
+      "type": "database_operation",
+      "subject": "FalkorDBService.query",
+      "predicate": "READS",
+      "object": "Database<FalkorDB:Graph>",
+      "source_file": "app/coddy/utils/services/falkordb_service.py",
+      "line_anchor": "L45-L54",
+      "symbol": "FalkorDBService.query",
+      "description": "Executes parameterized Cypher queries against in-memory FalkorDB graph.",
+      "details": {
+        "database": "FalkorDB",
+        "operation": "QUERY"
+      }
+    },
+    {
+      "id": "db_falkordb_export_graph",
+      "type": "database_operation",
+      "subject": "FalkorDBService.export_graph",
+      "predicate": "READS",
+      "object": "Database<FalkorDB:Graph>",
+      "source_file": "app/coddy/utils/services/falkordb_service.py",
+      "line_anchor": "L104-L135",
+      "symbol": "FalkorDBService.export_graph",
+      "description": "Dumps all nodes and relationships from in-memory FalkorDB for commit cache serialization.",
+      "details": {
+        "database": "FalkorDB",
+        "operation": "EXPORT"
+      }
+    },
+    {
+      "id": "db_falkordb_import_graph",
+      "type": "database_operation",
+      "subject": "FalkorDBService.import_graph",
+      "predicate": "CREATES",
+      "object": "Database<FalkorDB:Graph>",
+      "source_file": "app/coddy/utils/services/falkordb_service.py",
+      "line_anchor": "L136-L155",
+      "symbol": "FalkorDBService.import_graph",
+      "description": "Restores nodes and relationships into in-memory FalkorDB from cached GraphExport payload.",
+      "details": {
+        "database": "FalkorDB",
+        "operation": "IMPORT"
+      }
+    },
+    {
+      "id": "db_qdrant_upsert_chunk",
+      "type": "database_operation",
+      "subject": "VectorService.upsert_chunk",
+      "predicate": "CREATES",
+      "object": "Database<Qdrant:DocChunk>",
+      "source_file": "app/coddy/graphrag/services/vector_service.py",
+      "line_anchor": "L73-L114",
+      "symbol": "VectorService.upsert_chunk",
+      "description": "Stores documentation chunk and its BM25/BM42 sparse vectors in in-memory Qdrant collection.",
+      "details": {
+        "database": "Qdrant",
+        "collection": "DocChunk",
+        "operation": "UPSERT"
+      }
+    },
+    {
+      "id": "db_qdrant_upsert_fact",
+      "type": "database_operation",
+      "subject": "VectorService.upsert_fact",
+      "predicate": "CREATES",
+      "object": "Database<Qdrant:Fact>",
+      "source_file": "app/coddy/graphrag/services/vector_service.py",
+      "line_anchor": "L116-L156",
+      "symbol": "VectorService.upsert_fact",
+      "description": "Stores architectural fact and its BM25/BM42 sparse vectors in in-memory Qdrant collection.",
+      "details": {
+        "database": "Qdrant",
+        "collection": "Fact",
+        "operation": "UPSERT"
+      }
+    },
+    {
+      "id": "db_qdrant_search_chunks",
+      "type": "database_operation",
+      "subject": "VectorService.search_chunks",
+      "predicate": "READS",
+      "object": "Database<Qdrant:DocChunk>",
+      "source_file": "app/coddy/graphrag/services/vector_service.py",
+      "line_anchor": "L157-L188",
+      "symbol": "VectorService.search_chunks",
+      "description": "Performs sparse vector similarity search against DocChunk collection using BM25 or BM42.",
+      "details": {
+        "database": "Qdrant",
+        "collection": "DocChunk",
+        "operation": "SEARCH"
+      }
+    },
+    {
+      "id": "db_qdrant_search_facts",
+      "type": "database_operation",
+      "subject": "VectorService.search_facts",
+      "predicate": "READS",
+      "object": "Database<Qdrant:Fact>",
+      "source_file": "app/coddy/graphrag/services/vector_service.py",
+      "line_anchor": "L189-L239",
+      "symbol": "VectorService.search_facts",
+      "description": "Performs sparse vector similarity search with optional entity_type filtering on Fact collection.",
+      "details": {
+        "database": "Qdrant",
+        "collection": "Fact",
+        "operation": "SEARCH"
+      }
+    },
+    {
+      "id": "db_qdrant_export_vectors",
+      "type": "database_operation",
+      "subject": "VectorService.export_vectors",
+      "predicate": "READS",
+      "object": "Database<Qdrant:Collections>",
+      "source_file": "app/coddy/graphrag/services/vector_service.py",
+      "line_anchor": "L240-L277",
+      "symbol": "VectorService.export_vectors",
+      "description": "Exports DocChunk and Fact vector collections for commit cache persistence.",
+      "details": {
+        "database": "Qdrant",
+        "operation": "EXPORT"
+      }
+    },
+    {
+      "id": "db_qdrant_import_vectors",
+      "type": "database_operation",
+      "subject": "VectorService.import_vectors",
+      "predicate": "CREATES",
+      "object": "Database<Qdrant:Collections>",
+      "source_file": "app/coddy/graphrag/services/vector_service.py",
+      "line_anchor": "L278-L293",
+      "symbol": "VectorService.import_vectors",
+      "description": "Restores DocChunk and Fact vector collections into Qdrant from cached VectorsExport payload.",
+      "details": {
+        "database": "Qdrant",
+        "operation": "IMPORT"
+      }
+    },
+    {
+      "id": "file_graphrag_cache_save",
+      "type": "file_io",
+      "subject": "save_graphrag_cache",
+      "predicate": "CREATES",
+      "object": ".cache/graphrag/<commit_sha>/graph.json",
+      "source_file": "app/coddy/graphrag/services/cache_service.py",
+      "line_anchor": "L113-L128",
+      "symbol": "save_graphrag_cache",
+      "description": "Serializes FalkorDB graph nodes and relationships to commit cache JSON file.",
+      "details": {
+        "target_pattern": ".cache/graphrag/<commit_sha>/graph.json",
+        "format": "json"
+      }
+    },
+    {
+      "id": "file_graphrag_vectors_save",
+      "type": "file_io",
+      "subject": "save_graphrag_cache",
+      "predicate": "CREATES",
+      "object": ".cache/graphrag/<commit_sha>/vectors.json",
+      "source_file": "app/coddy/graphrag/services/cache_service.py",
+      "line_anchor": "L113-L128",
+      "symbol": "save_graphrag_cache",
+      "description": "Serializes Qdrant sparse vector collections to commit cache JSON file.",
+      "details": {
+        "target_pattern": ".cache/graphrag/<commit_sha>/vectors.json",
+        "format": "json"
+      }
+    },
+    {
+      "id": "file_graphrag_cache_load",
+      "type": "file_io",
+      "subject": "load_graphrag_cache",
+      "predicate": "READS",
+      "object": ".cache/graphrag/<commit_sha>/graph.json",
+      "source_file": "app/coddy/graphrag/services/cache_service.py",
+      "line_anchor": "L130-L147",
+      "symbol": "load_graphrag_cache",
+      "description": "Loads and deserializes cached graph nodes and edges for the current git commit SHA.",
+      "details": {
+        "target_pattern": ".cache/graphrag/<commit_sha>/graph.json",
+        "format": "json"
+      }
+    },
+    {
+      "id": "file_graphrag_vectors_load",
+      "type": "file_io",
+      "subject": "load_graphrag_cache",
+      "predicate": "READS",
+      "object": ".cache/graphrag/<commit_sha>/vectors.json",
+      "source_file": "app/coddy/graphrag/services/cache_service.py",
+      "line_anchor": "L130-L147",
+      "symbol": "load_graphrag_cache",
+      "description": "Loads and deserializes cached Qdrant sparse vectors for the current git commit SHA.",
+      "details": {
+        "target_pattern": ".cache/graphrag/<commit_sha>/vectors.json",
+        "format": "json"
+      }
+    },
+    {
+      "id": "file_sanitize_artifacts",
+      "type": "file_io",
+      "subject": "ArtifactService.save_sanitizer_artifacts",
+      "predicate": "CREATES",
+      "object": "~/.coddy/<session_id>/artifacts/SANITIZED_USER_REQUEST.md",
+      "source_file": "app/coddy/agentic/services/artifact_service.py",
+      "line_anchor": "L90-L112",
+      "symbol": "ArtifactService.save_sanitizer_artifacts",
+      "description": "Persists the sanitized user request Markdown and JSON documents in the session artifacts directory.",
+      "details": {
+        "target_dir": "~/.coddy/<session_id>/artifacts",
+        "formats": [
+          "md",
+          "json"
+        ]
+      }
+    },
+    {
+      "id": "file_enhanced_user_request_artifacts",
+      "type": "file_io",
+      "subject": "ArtifactService.save_enhanced_user_request_artifacts",
+      "predicate": "CREATES",
+      "object": "~/.coddy/<session_id>/artifacts/ENHANCED_USER_REQUEST.md",
+      "source_file": "app/coddy/agentic/services/artifact_service.py",
+      "line_anchor": "L114-L132",
+      "symbol": "ArtifactService.save_enhanced_user_request_artifacts",
+      "description": "Persists the enhanced user request Markdown and JSON documents in the session artifacts directory.",
+      "details": {
+        "target_dir": "~/.coddy/<session_id>/artifacts",
+        "formats": [
+          "md",
+          "json"
+        ]
+      }
+    },
+    {
+      "id": "file_research_artifacts",
+      "type": "file_io",
+      "subject": "ArtifactService.save_research_plan",
+      "predicate": "CREATES",
+      "object": "~/.coddy/<session_id>/artifacts/research_plans/*",
+      "source_file": "app/coddy/agentic/services/artifact_service.py",
+      "line_anchor": "L149-L178",
+      "symbol": "ArtifactService.save_research_plan",
+      "description": "Writes research plan JSON data model and rendered Markdown artifact into session artifacts directory.",
+      "details": {
+        "target_dir": "~/.coddy/<session_id>/artifacts/research_plans",
+        "formats": [
+          "json",
+          "md"
+        ]
+      }
+    },
+    {
+      "id": "file_episode_research_artifacts",
+      "type": "file_io",
+      "subject": "ArtifactService.save_episode_research",
+      "predicate": "CREATES",
+      "object": "~/.coddy/<session_id>/artifacts/research_episodes/*",
+      "source_file": "app/coddy/agentic/services/artifact_service.py",
+      "line_anchor": "L195-L215",
+      "symbol": "ArtifactService.save_episode_research",
+      "description": "Writes episodic research JSON data model and rendered Markdown artifact into session artifacts directory.",
+      "details": {
+        "target_dir": "~/.coddy/<session_id>/artifacts/research_episodes",
+        "formats": [
+          "json",
+          "md"
+        ]
+      }
+    },
+    {
+      "id": "file_research_report_artifacts",
+      "type": "file_io",
+      "subject": "ArtifactService.save_research_report",
+      "predicate": "CREATES",
+      "object": "~/.coddy/<session_id>/artifacts/RESEARCH_REPORT.md",
+      "source_file": "app/coddy/agentic/services/artifact_service.py",
+      "line_anchor": "L217-L231",
+      "symbol": "ArtifactService.save_research_report",
+      "description": "Writes synthesized technical research report JSON and 6-section Markdown artifact into session artifacts directory.",
+      "details": {
+        "target_dir": "~/.coddy/<session_id>/artifacts",
+        "formats": [
+          "json",
+          "md"
+        ]
+      }
+    },
+    {
+      "id": "file_specify_artifacts",
+      "type": "file_io",
+      "subject": "ArtifactService.save_specification",
+      "predicate": "CREATES",
+      "object": "~/.coddy/<session_id>/artifacts/specifications/*",
+      "source_file": "app/coddy/agentic/services/artifact_service.py",
+      "line_anchor": "L233-L253",
+      "symbol": "ArtifactService.save_specification",
+      "description": "Writes technical specification JSON data model and rendered Markdown artifact into session artifacts directory.",
+      "details": {
+        "target_dir": "~/.coddy/<session_id>/artifacts/specifications",
+        "formats": [
+          "json",
+          "md"
+        ]
+      }
+    },
+    {
+      "id": "file_plan_artifacts",
+      "type": "file_io",
+      "subject": "ArtifactService.save_plan",
+      "predicate": "CREATES",
+      "object": "~/.coddy/<session_id>/artifacts/plans/*",
+      "source_file": "app/coddy/agentic/services/artifact_service.py",
+      "line_anchor": "L255-L275",
+      "symbol": "ArtifactService.save_plan",
+      "description": "Writes hierarchical execution plan JSON data model and rendered Markdown artifact into session artifacts directory.",
+      "details": {
+        "target_dir": "~/.coddy/<session_id>/artifacts/plans",
+        "formats": [
+          "json",
+          "md"
+        ]
+      }
+    },
+    {
+      "id": "file_research_materials_artifacts",
+      "type": "file_io",
+      "subject": "ArtifactService.save_research_materials",
+      "predicate": "CREATES",
+      "object": "~/.coddy/<session_id>/artifacts/research_materials/*",
+      "source_file": "app/coddy/agentic/services/artifact_service.py",
+      "line_anchor": "L277-L325",
+      "symbol": "ArtifactService.save_research_materials",
+      "description": "Persists original files, converted Markdown, and manifest JSON for research materials in session artifacts directory.",
+      "details": {
+        "target_dir": "~/.coddy/<session_id>/artifacts/research_materials",
+        "formats": [
+          "original",
+          "md",
+          "json"
+        ]
+      }
+    },
+    {
+      "id": "file_session_log",
+      "type": "file_io",
+      "subject": "get_data_db_path",
+      "predicate": "RESOLVES",
+      "object": "~/.coddy/data.db",
+      "source_file": "app/coddy/agentic/services/paths.py",
+      "line_anchor": "L54-L58",
+      "symbol": "get_data_db_path",
+      "description": "Resolves the SQLite database path for ADK sessions and state storage (~/.coddy/data.db).",
+      "details": {
+        "target_pattern": "~/.coddy/data.db",
+        "format": "sqlite3"
+      }
+    },
+    {
+      "id": "file_pricing_catalog",
+      "type": "file_io",
+      "subject": "PricingService._load_catalog",
+      "predicate": "READS",
+      "object": "app/coddy/data/pricing.json",
+      "source_file": "app/coddy/agentic/services/pricing_service.py",
+      "line_anchor": "L69-L90",
+      "symbol": "PricingService._load_catalog",
+      "description": "Loads and parses model token pricing catalog for cost estimation telemetry.",
+      "details": {
+        "format": "json"
+      }
+    },
+    {
+      "id": "api_models_verifier",
+      "type": "external_api",
+      "subject": "get_available_models",
+      "predicate": "CALLS",
+      "object": "http://localhost:1234/v1/models",
+      "source_file": "app/coddy/helpers/pre_flight_checks.py",
+      "line_anchor": "L119-L142",
+      "symbol": "get_available_models",
+      "description": "HTTP GET request fetching available model identifiers from local LLM daemon.",
+      "details": {
+        "method": "GET",
+        "endpoint": "http://localhost:1234/v1/models",
+        "protocol": "HTTP/1.1"
+      }
+    },
+    {
+      "id": "api_verify_models",
+      "type": "external_api",
+      "subject": "verify_models",
+      "predicate": "CALLS",
+      "object": "http://localhost:1234/v1",
+      "source_file": "app/coddy/helpers/pre_flight_checks.py",
+      "line_anchor": "L160-L210",
+      "symbol": "verify_models",
+      "description": "Pre-flight validation ensuring all required worker models exist on local LLM endpoint.",
+      "details": {
+        "method": "GET",
+        "endpoint": "http://localhost:1234/v1/models",
+        "protocol": "HTTP/1.1"
+      }
+    },
+    {
+      "id": "api_worker_chat_completions",
+      "type": "external_api",
+      "subject": "CodingSanitizerAgent",
+      "predicate": "CALLS",
+      "object": "gemini-3.5-flash-lite",
+      "source_file": "app/coddy/agentic/agents/coding_sanitizer/agent.py",
+      "line_anchor": "L18-L46",
+      "symbol": "CodingSanitizerAgent",
+      "description": "google-adk LlmAgent invocation with structured outputs and thinking configuration.",
+      "details": {
+        "method": "POST",
+        "model": "gemini-3.5-flash-lite",
+        "protocol": "HTTP/1.1"
+      }
+    },
+    {
+      "id": "api_worker_clarifier_completions",
+      "type": "external_api",
+      "subject": "CodingAmbiguityClarifierAgent",
+      "predicate": "CALLS",
+      "object": "gemini-3.5-flash-lite",
+      "source_file": "app/coddy/agentic/agents/coding_ambiguity_clarifier/agent.py",
+      "line_anchor": "L18-L46",
+      "symbol": "CodingAmbiguityClarifierAgent",
+      "description": "google-adk LlmAgent invocation with structured outputs and medium thinking configuration for ambiguity clarification.",
+      "details": {
+        "method": "POST",
+        "model": "gemini-3.5-flash-lite",
+        "protocol": "HTTP/1.1"
+      }
+    },
+    {
+      "id": "api_worker_researcher_completions",
+      "type": "external_api",
+      "subject": "CodingResearcherAgent",
+      "predicate": "CALLS",
+      "object": "gemini-3.8-flash",
+      "source_file": "app/coddy/agentic/agents/coding_researcher/agent.py",
+      "line_anchor": "L29-L67",
+      "symbol": "CodingResearcherAgent",
+      "description": "google-adk LlmAgent episodic technical research on single subject with medium thinking, GraphRAG, and web search.",
+      "details": {
+        "method": "POST",
+        "model": "gemini-3.8-flash",
+        "protocol": "HTTP/1.1"
+      }
+    },
+    {
+      "id": "api_worker_research_clarifier_completions",
+      "type": "external_api",
+      "subject": "CodingResearchClarifierAgent",
+      "predicate": "CALLS",
+      "object": "gemini-3.5-flash-lite",
+      "source_file": "app/coddy/agentic/agents/coding_research_clarifier/agent.py",
+      "line_anchor": "L20-L48",
+      "symbol": "CodingResearchClarifierAgent",
+      "description": "google-adk LlmAgent open issues resolution and interactive clarification with low thinking.",
+      "details": {
+        "method": "POST",
+        "model": "gemini-3.5-flash-lite",
+        "protocol": "HTTP/1.1"
+      }
+    },
+    {
+      "id": "api_worker_research_reporter_completions",
+      "type": "external_api",
+      "subject": "CodingResearchReporterAgent",
+      "predicate": "CALLS",
+      "object": "gemini-3.8-flash",
+      "source_file": "app/coddy/agentic/agents/coding_research_reporter/agent.py",
+      "line_anchor": "L18-L46",
+      "symbol": "CodingResearchReporterAgent",
+      "description": "google-adk LlmAgent technical research report synthesis with high thinking.",
+      "details": {
+        "method": "POST",
+        "model": "gemini-3.8-flash",
+        "protocol": "HTTP/1.1"
+      }
+    },
+    {
+      "id": "api_web_search_duckduckgo",
+      "type": "external_api",
+      "subject": "GraphRAGTools.web_search",
+      "predicate": "CALLS",
+      "object": "https://html.duckduckgo.com/html/",
+      "source_file": "app/coddy/agentic/tools/graphrag_tools.py",
+      "line_anchor": "L436-L487",
+      "symbol": "GraphRAGTools.web_search",
+      "description": "HTTP POST query to DuckDuckGo HTML endpoint for external web documentation retrieval.",
+      "details": {
+        "method": "POST",
+        "endpoint": "https://html.duckduckgo.com/html/",
+        "protocol": "HTTPS"
+      }
+    },
+    {
+      "id": "callback_load_project_context",
+      "type": "callback_dispatch",
+      "subject": "load_project_context",
+      "predicate": "INJECTS_INTO",
+      "object": "CodingOrchestratorWorkflow",
+      "source_file": "app/coddy/agentic/workflows/coding_orchestrate/step_1_nodes.py",
+      "line_anchor": "L25-L59",
+      "symbol": "load_project_context",
+      "description": "FunctionNode callback executed prior to worker agents, reading README.md (local project description) and AGENTS.md (local project instructions) and populating context.state[\"local_project_description\"] and context.state[\"local_project_instructions\"].",
+      "details": {
+        "consumer": "CodingOrchestratorWorkflow",
+        "state_keys": [
+          "local_project_description",
+          "local_project_instructions"
+        ]
+      }
+    },
+    {
+      "id": "callback_load_research_material",
+      "type": "callback_dispatch",
+      "subject": "load_research_material",
+      "predicate": "INJECTS_INTO",
+      "object": "CodingOrchestratorWorkflow",
+      "source_file": "app/coddy/agentic/workflows/coding_orchestrate/step_3_nodes.py",
+      "line_anchor": "L43-L86",
+      "symbol": "load_research_material",
+      "description": "FunctionNode callback executed prior to coding-research-planner, ingesting research material files and populating context.state[\"research_materials\"].",
+      "details": {
+        "consumer": "CodingOrchestratorWorkflow",
+        "state_key": "research_materials"
+      }
+    },
+    {
+      "id": "callback_metrics_plugin",
+      "type": "callback_dispatch",
+      "subject": "get_metrics_plugin",
+      "predicate": "INJECTS_INTO",
+      "object": "CodingOrchestratorWorkflow",
+      "source_file": "app/coddy/agentic/services/metrics_service.py",
+      "line_anchor": "L1084-L1087",
+      "symbol": "get_metrics_plugin",
+      "description": "ADK BasePlugin registering lifecycle hooks (before/after agent, step, model, tool) that asynchronously update UIService views and record DuckDB metrics.",
+      "details": {
+        "consumer": "CodingOrchestratorWorkflow",
+        "plugin_class": "MetricsPlugin"
+      }
+    },
+    {
+      "id": "callback_persist_sanitizer",
+      "type": "callback_dispatch",
+      "subject": "_persist_sanitizer_output",
+      "predicate": "CALLS",
+      "object": "ArtifactService.save_sanitizer_artifacts",
+      "source_file": "app/coddy/agentic/workflows/coding_orchestrate/workflow.py",
+      "line_anchor": "L358-L470",
+      "symbol": "_persist_sanitizer_output",
+      "description": "Callback extraction logic invoked after coding-sanitize, extracting structured SanitizedUserRequest, writing JSON and rendered Markdown artifacts.",
+      "details": {
+        "target": "ArtifactService.save_sanitizer_artifacts"
+      }
+    },
+    {
+      "id": "callback_persist_clarifier",
+      "type": "callback_dispatch",
+      "subject": "_persist_clarifier_output",
+      "predicate": "CALLS",
+      "object": "ArtifactService.save_enhanced_user_request_artifacts",
+      "source_file": "app/coddy/agentic/workflows/coding_orchestrate/workflow.py",
+      "line_anchor": "L475-L555",
+      "symbol": "_persist_clarifier_output",
+      "description": "Callback extraction logic invoked after coding-ambiguity-clarifier, extracting structured EnhancedUserRequest, writing JSON and rendered Markdown artifacts.",
+      "details": {
+        "target": "ArtifactService.save_enhanced_user_request_artifacts"
+      }
+    },
+    {
+      "id": "callback_persist_research_plan",
+      "type": "callback_dispatch",
+      "subject": "_persist_research_plan_output",
+      "predicate": "CALLS",
+      "object": "ArtifactService.save_research_plan",
+      "source_file": "app/coddy/agentic/workflows/coding_orchestrate/workflow.py",
+      "line_anchor": "L560-L640",
+      "symbol": "_persist_research_plan_output",
+      "description": "Callback extraction logic invoked after coding-research-plan, extracting structured ResearchPlan, writing topic JSON and rendered Markdown artifacts.",
+      "details": {
+        "target": "ArtifactService.save_research_plan"
+      }
+    },
+    {
+      "id": "mapper_sanitize_format_user_request",
+      "type": "artifact_transformation",
+      "subject": "SanitizeMapper.format_user_request",
+      "predicate": "TRANSFORMS",
+      "object": "SanitizedUserRequest",
+      "source_file": "app/coddy/agentic/mappers/sanitize_mapper.py",
+      "line_anchor": "L10-L27",
+      "symbol": "SanitizeMapper.format_user_request",
+      "description": "Transforms SanitizedUserRequest structured instance into human-readable Markdown for user request and ambiguous terms.",
+      "details": {
+        "source_schema": "SanitizedUserRequest",
+        "target_format": "markdown"
+      }
+    },
+    {
+      "id": "mapper_enhanced_user_request_to_markdown",
+      "type": "artifact_transformation",
+      "subject": "EnhancedUserRequestMapper.to_markdown",
+      "predicate": "TRANSFORMS",
+      "object": "EnhancedUserRequest",
+      "source_file": "app/coddy/agentic/mappers/enhanced_user_request_mapper.py",
+      "line_anchor": "L10-L32",
+      "symbol": "EnhancedUserRequestMapper.to_markdown",
+      "description": "Transforms EnhancedUserRequest structured instance into human-readable Markdown for user request and clarification log.",
+      "details": {
+        "source_schema": "EnhancedUserRequest",
+        "target_format": "markdown"
+      }
+    },
+    {
+      "id": "mapper_research_plan_to_markdown",
+      "type": "artifact_transformation",
+      "subject": "ResearchPlanMapper.to_markdown",
+      "predicate": "TRANSFORMS",
+      "object": "ResearchPlan",
+      "source_file": "app/coddy/agentic/mappers/research_plan_mapper.py",
+      "line_anchor": "L10-L50",
+      "symbol": "ResearchPlanMapper.to_markdown",
+      "description": "Transforms ResearchPlan JSON model into structured research findings Markdown document.",
+      "details": {
+        "source_schema": "ResearchPlan",
+        "target_format": "markdown"
+      }
+    },
+    {
+      "id": "mapper_episode_research_to_markdown",
+      "type": "artifact_transformation",
+      "subject": "EpisodeResearchMapper.to_markdown",
+      "predicate": "TRANSFORMS",
+      "object": "EpisodeResearchResult",
+      "source_file": "app/coddy/agentic/mappers/research_mapper.py",
+      "line_anchor": "L9-L85",
+      "symbol": "EpisodeResearchMapper.to_markdown",
+      "description": "Transforms EpisodeResearchResult JSON model into structured episodic research Markdown document.",
+      "details": {
+        "source_schema": "EpisodeResearchResult",
+        "target_format": "markdown"
+      }
+    },
+    {
+      "id": "mapper_research_report_to_markdown",
+      "type": "artifact_transformation",
+      "subject": "ResearchReportMapper.to_markdown",
+      "predicate": "TRANSFORMS",
+      "object": "ResearchReport",
+      "source_file": "app/coddy/agentic/mappers/research_mapper.py",
+      "line_anchor": "L88-L191",
+      "symbol": "ResearchReportMapper.to_markdown",
+      "description": "Transforms ResearchReport JSON model into comprehensive 6-section technical research report Markdown document.",
+      "details": {
+        "source_schema": "ResearchReport",
+        "target_format": "markdown"
+      }
+    },
+    {
+      "id": "mapper_spec_to_markdown",
+      "type": "artifact_transformation",
+      "subject": "SpecificationMapper.to_markdown",
+      "predicate": "TRANSFORMS",
+      "object": "Specification",
+      "source_file": "app/coddy/agentic/mappers/spec_mapper.py",
+      "line_anchor": "L15-L100",
+      "symbol": "SpecificationMapper.to_markdown",
+      "description": "Transforms Specification JSON model into human-readable technical specification Markdown document.",
+      "details": {
+        "source_schema": "Specification",
+        "target_format": "markdown"
+      }
+    },
+    {
+      "id": "mapper_plan_to_markdown",
+      "type": "artifact_transformation",
+      "subject": "PlanMapper.to_markdown",
+      "predicate": "TRANSFORMS",
+      "object": "Plan",
+      "source_file": "app/coddy/agentic/mappers/plan_mapper.py",
+      "line_anchor": "L15-L100",
+      "symbol": "PlanMapper.to_markdown",
+      "description": "Transforms hierarchical Plan JSON model into execution roadmap and task Markdown document.",
+      "details": {
+        "source_schema": "Plan",
+        "target_format": "markdown"
+      }
+    },
+    {
+      "id": "cli_metrics_summary",
+      "type": "cli_interface",
+      "subject": "coddy metrics summary",
+      "predicate": "CALLS",
+      "object": "metrics_summary_cmd",
+      "source_file": "app/coddy/cli/metrics.py",
+      "line_anchor": "L20-L123",
+      "symbol": "metrics_summary_cmd",
+      "description": "Displays high-level performance metrics for models, agents, and overall sessions.",
+      "details": {
+        "subcommand": "metrics summary",
+        "options": [
+          "--session-id",
+          "-s",
+          "--limit",
+          "-n"
+        ]
+      }
+    },
+    {
+      "id": "cli_metrics_sessions",
+      "type": "cli_interface",
+      "subject": "coddy metrics sessions",
+      "predicate": "CALLS",
+      "object": "metrics_sessions_cmd",
+      "source_file": "app/coddy/cli/metrics.py",
+      "line_anchor": "L124-L170",
+      "symbol": "metrics_sessions_cmd",
+      "description": "Lists detailed session execution records or inspects a specific session.",
+      "details": {
+        "subcommand": "metrics sessions",
+        "options": [
+          "--session-id",
+          "-s",
+          "--limit",
+          "-n"
+        ]
+      }
+    },
+    {
+      "id": "cli_metrics_tools",
+      "type": "cli_interface",
+      "subject": "coddy metrics tools",
+      "predicate": "CALLS",
+      "object": "metrics_tools_cmd",
+      "source_file": "app/coddy/cli/metrics.py",
+      "line_anchor": "L171-L233",
+      "symbol": "metrics_tools_cmd",
+      "description": "Inspects tool invocations and performance metrics.",
+      "details": {
+        "subcommand": "metrics tools",
+        "options": [
+          "--session-id",
+          "-s",
+          "--limit",
+          "-n"
+        ]
+      }
+    },
+    {
+      "id": "db_duckdb_session_metrics",
+      "type": "database_operation",
+      "subject": "MetricsService.record_session_start",
+      "predicate": "CREATES",
+      "object": "Database<DuckDB:session_metrics>",
+      "source_file": "app/coddy/agentic/services/metrics_service.py",
+      "line_anchor": "L70-L96",
+      "symbol": "MetricsService.record_session_start",
+      "description": "Records initial and finalized session metrics into DuckDB session_metrics table.",
+      "details": {
+        "database": "DuckDB",
+        "table": "session_metrics"
+      }
+    },
+    {
+      "id": "db_duckdb_step_metrics",
+      "type": "database_operation",
+      "subject": "MetricsService.record_step",
+      "predicate": "CREATES",
+      "object": "Database<DuckDB:step_metrics>",
+      "source_file": "app/coddy/agentic/services/metrics_service.py",
+      "line_anchor": "L145-L215",
+      "symbol": "MetricsService.record_step",
+      "description": "Inserts execution step metrics including TTFT and tokens per second into DuckDB step_metrics table.",
+      "details": {
+        "database": "DuckDB",
+        "table": "step_metrics"
+      }
+    },
+    {
+      "id": "db_duckdb_tool_metrics",
+      "type": "database_operation",
+      "subject": "MetricsService.record_tool_call",
+      "predicate": "CREATES",
+      "object": "Database<DuckDB:tool_metrics>",
+      "source_file": "app/coddy/agentic/services/metrics_service.py",
+      "line_anchor": "L217-L270",
+      "symbol": "MetricsService.record_tool_call",
+      "description": "Inserts tool invocation metrics with truncated arguments and results into DuckDB tool_metrics table.",
+      "details": {
+        "database": "DuckDB",
+        "table": "tool_metrics"
+      }
+    },
+    {
+      "id": "file_metrics_db",
+      "type": "file_io",
+      "subject": "DuckDbService.get_connection",
+      "predicate": "CREATES",
+      "object": "~/.coddy/metrics.db",
+      "source_file": "app/coddy/utils/services/duckdb_service.py",
+      "line_anchor": "L187-L208",
+      "symbol": "DuckDbService.get_connection",
+      "description": "Establishes persistent DuckDB database connection and creates tables and analytical views at ~/.coddy/metrics.db.",
+      "details": {
+        "path": "~/.coddy/metrics.db",
+        "format": "duckdb"
+      }
+    }
+  ]
+}
